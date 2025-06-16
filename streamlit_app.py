@@ -3,8 +3,12 @@ import pandas as pd
 from datetime import datetime
 
 # --- CONFIGURAÇÕES DA PÁGINA ---
-st.set_page_config(page_title="Consulta de Rating de Emissores e Emissões", layout="wide"
-)
+st.set_page_config(page_title="Consulta de Rating de Emissores e Emissões", layout='wide')
+
+def wide_space_default():
+    st.set_page_config(layout='wide')
+
+wide_space_default()
 
 # --- TÍTULO ---
 st.title("🔍 Consulta Rating de Emissores e Emissões")
