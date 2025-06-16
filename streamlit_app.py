@@ -61,7 +61,7 @@ if nome_pesquisado and not df.empty:
         tabela = tabela.sort_values(by='Data Emissão', ascending=False)
         tabela['Data Emissão'] = tabela['Data Emissão'].dt.strftime('%Y-%m-%d')
 
-        st.dataframe(tabela, hide_index=True)
+        st.dataframe(tabela, hide_index=True, use_container_width=True)
    
     else:
         st.warning("⚠️ Nenhum resultado encontrado para o nome pesquisado.")
