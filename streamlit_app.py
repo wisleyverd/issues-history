@@ -1,29 +1,75 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
-# --- CONFIGURAÇÕES ---
+# --- CONFIGURAÇÕES DA PÁGINA ---
 st.set_page_config(page_title="Consulta de Emissores e Emissões", layout="centered")
 
 # --- TÍTULO ---
-st.title("🔍 Consulta")
+st.title("🔍 Consulta Rating de Emissores e Emissões")
 
-# --- CAMPO DE BUSCA ---
-nome_pesquisado = st.text_input("Digite o nome da empresa para buscar:")
-
-# --- CARREGAR BASE (Parquet ou CSV) ---
-@st.cache_data
+# --- FUNÇÃO: CARREGAMENTO SEGURO DOS DADOS ---
+@st.cache_data(show_spinner="Carregando dados...")
 def carregar_dados():
-    return pd.read_parquet("202506-Emissoes-Consolidado.parquet")
+    try:
+        df_raw = pd.read_parquet("202506-Emissoes-Consolidado.parquet")
 
+        # Renomeia as colunas para nomes mais amigáveis
+        df = df_raw.rename(columns={
+            'AGENCIA': 'Agência',
+            'NOME-FIADOR': 'Emissor/Fiador',
+            'CATEGORIA': 'Categoria',
+            'RATING': 'Rating',
+            'DATA-RATING': 'Data Emissão',
+            'CLASSIFICACAO-ACAO': 'Ação',
+            'PERSPECTIVA-RATING': 'Perspectiva',
+            'TIPO-ANUNCIO': 'Anúncio',
+            'TIPO-PRAZO': 'Prazo',
+            'TIPO-RATING': 'Tipo',
+            'SUBTIPO-RATING': 'Subtipo'
+        })
+
+        # Remove linhas com valores ausentes no campo de busca
+        df = df.dropna(subset=["Emissor/Fiador"])
+
+        return df
+
+    except FileNotFoundError:
+        st.error("❌ Arquivo de dados não encontrado.")
+        return pd.DataFrame()
+    except Exception as e:
+        st.error(f"❌ Erro ao carregar dados: {e}")
+        return pd.DataFrame()
+
+# --- CARREGAR OS DADOS ---
 df = carregar_dados()
 
+# --- CAMPO DE BUSCA ---
+nome_pesquisado = st.text_input("Insira o nome da empresa:")
+
 # --- CONSULTA ---
-if nome_pesquisado:
-    # Filtro que ignora maiúsculas/minúsculas
-    resultado = df[df['NOME-FIADOR'].str.lower().str.contains(nome_pesquisado.lower())]
+if nome_pesquisado and not df.empty:
+    nome_normalizado = nome_pesquisado.lower().strip()
+
+    resultado = df[df["Emissor/Fiador"].str.lower().str.contains(nome_normalizado)]
 
     if not resultado.empty:
-        st.success(f"{len(resultado)} nome(s) encontrado(s):")
-        st.write(resultado[['AGENCIA', 'NOME-FIADOR', 'CATEGORIA']])
+        st.success(f"✅ {len(resultado)} resultado(s) encontrado(s):")
+        tabela = resultado[
+            ['Agência', 'Emissor/Fiador', 'Categoria', 'Rating', 'Data Emissão',
+             'Ação', 'Perspectiva', 'Anúncio', 'Tipo', 'Subtipo']]
+        tabela = tabela.sort_values(by='Data Emissão', ascending=False)
+        tabela['Data Emissão'] = tabela['Data Emissão'].dt.strftime('%Y-%m-%d')
+
+        st.dataframe(tabela, hide_index=True)
+   
     else:
-        st.warning("Nenhum nome encontrado.")
+        st.warning("⚠️ Nenhum resultado encontrado para o nome pesquisado.")
+
+elif nome_pesquisado and df.empty:
+    st.info("ℹ️ A busca não pôde ser realizada porque os dados não foram carregados.")
+
+# --- RODAPÉ / COMENTÁRIOS FINAIS ---
+st.markdown("---")
+st.caption("📅 Dados atualizados em: **Junho de 2025**")
+st.caption("🔐 Fonte: Base interna consolidada de emissões das agências Fitch Ratings, S&P Ratings e Moody's Ratings.")
