@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 
 # --- CONFIGURAÇÕES DA PÁGINA ---
-st.set_page_config(page_title="Consulta de Emissores e Emissões", layout="centered")
+st.set_page_config(page_title="Consulta de Rating de Emissores e Emissões", layout="centered")
 
 # --- TÍTULO ---
 st.title("🔍 Consulta Rating de Emissores e Emissões")
@@ -12,7 +12,7 @@ st.title("🔍 Consulta Rating de Emissores e Emissões")
 @st.cache_data(show_spinner="Carregando dados...")
 def carregar_dados():
     try:
-        df_raw = pd.read_parquet("202506-Emissoes-Consolidado.parquet")
+        df_raw = pd.read_parquet("202506-Rating-Emissoes-Consolidado.parquet")
 
         # Renomeia as colunas para nomes mais amigáveis
         df = df_raw.rename(columns={
