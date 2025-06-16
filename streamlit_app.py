@@ -15,7 +15,7 @@ st.title("🔍 Consulta Rating de Emissores e Emissões")
 @st.cache_data(show_spinner="Carregando dados...")
 def carregar_dados():
     try:
-        df_raw = pd.read_parquet("202506-Rating-Emissoes-Consolidado.parquet")
+        df_raw = pd.read_parquet("202506-Emissoes-Consolidado.parquet")
 
         # Renomeia as colunas para nomes mais amigáveis
         df = df_raw.rename(columns={
