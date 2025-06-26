@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import re
 
 # --- CONFIGURAÇÕES DA PÁGINA ---
 
@@ -20,17 +21,26 @@ def carregar_dados():
         # Renomeia as colunas para nomes mais amigáveis
         df = df_raw.rename(columns={
             'AGENCIA': 'Agência',
-            'NOME-FIADOR': 'Emissor/Fiador',
-            'CATEGORIA': 'Categoria',
-            'RATING': 'Rating',
-            'DATA-RATING': 'Data Emissão',
-            'CLASSIFICACAO-ACAO': 'Ação',
-            'PERSPECTIVA-RATING': 'Perspectiva',
-            'TIPO-ANUNCIO': 'Anúncio',
-            'TIPO-PRAZO': 'Prazo',
-            'TIPO-RATING': 'Tipo',
-            'SUBTIPO-RATING': 'Subtipo'
+                'NOME-FIADOR': 'Fiador',
+                'CATEGORIA': 'Categoria',
+                'NOME-EMISSOR': 'Emissor',
+                'TIPO-INSTRUMENTO': 'Tipo Instrumento',
+                'NOME-INSTRUMENTO': 'Instrumento',
+                'DATA-MATURIDADE': 'Data Maturidade',
+                'PAGO-POR-EMISSOR': 'Pago por emissor?',
+                'RATING': 'Rating',
+                'DATA-RATING': 'Data Rating',
+                'CLASSIFICACAO-ACAO': 'Ação',
+                'PERSPECTIVA-RATING': 'Perspectiva',
+                'WATCH-STATUS-RATING': 'Status',
+                'TIPO-ANUNCIO': 'Anúncio',
+                'TIPO-PRAZO': 'Prazo',
+                'TIPO-RATING': 'Tipo',
+                'SUBTIPO-RATING': 'Subtipo'
         })
+
+        # Cria a coluna combinada 'Emissor/Fiador'
+        df["Emissor/Fiador"] = df["Fiador"].fillna(df["Emissor"])
 
         # Remove linhas com valores ausentes no campo de busca
         df = df.dropna(subset=["Emissor/Fiador"])
@@ -54,17 +64,25 @@ nome_pesquisado = st.text_input("Insira o nome da empresa:")
 if nome_pesquisado and not df.empty:
     nome_normalizado = nome_pesquisado.lower().strip()
 
-    resultado = df[df["Emissor/Fiador"].str.lower().str.contains(nome_normalizado)]
+    padrao = re.escape(nome_normalizado)
+    regex = re.compile(padrao)
+    resultado = df[
+    df["Emissor/Fiador"].str.lower().str.contains(regex, na=False) |
+    df["Instrumento"].str.lower().str.contains(regex, na=False)
+]
 
     if not resultado.empty:
         st.success(f"✅ {len(resultado)} resultado(s) encontrado(s):")
         tabela = resultado[
-            ['Agência', 'Emissor/Fiador', 'Categoria', 'Rating', 'Data Emissão',
+            ['Agência', 'Emissor/Fiador', 'Categoria', 'Instrumento', 'Rating', 'Data Rating',
              'Ação', 'Perspectiva', 'Anúncio', 'Tipo', 'Subtipo']]
-        tabela = tabela.sort_values(by='Data Emissão', ascending=False)
-        tabela['Data Emissão'] = tabela['Data Emissão'].dt.strftime('%Y-%m-%d')
+        
+        tabela = tabela.sort_values(by='Data Rating', ascending=False)
 
-        st.dataframe(tabela, hide_index=True, use_container_width=True)
+        tabela['Instrumento'] = tabela['Instrumento'].replace({None: '', 'None': ''})
+        tabela['Data Rating'] = tabela['Data Rating'].dt.strftime('%d/%m/%Y')
+
+        st.dataframe(tabela.fillna(''), hide_index=True, use_container_width=True)
    
     else:
         st.warning("⚠️ Nenhum resultado encontrado para o nome pesquisado.")
@@ -74,5 +92,6 @@ elif nome_pesquisado and df.empty:
 
 # --- RODAPÉ / COMENTÁRIOS FINAIS ---
 st.markdown("---")
-st.caption("📅 Dados atualizados em: **Junho de 2025**")
-st.caption("🔐 Fonte: Base interna consolidada de emissões das agências Fitch Ratings, S&P Ratings e Moody's Ratings.")
+st.caption("📅 Dados atualizados em: **01 de Junho de 2025**")
+st.caption("🔐 Fonte: Base interna consolidada de emissões das agências: Fitch Ratings; S&P Ratings; Moody's Ratings; Austin Ratings; SR Ratings; Bells&Bayes; AM Best Ratings.")
+st.caption("⚠️ Algumas fontes só tornam públicas as avaliações de rating 12 meses após a emissão. Considere verificar outras fontes.")
